@@ -1,0 +1,9 @@
+{
+  "name": "Exame de Faixa de Judô",
+  "short_name": "Exame Judô",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f1f5f9",
+  "theme_color": "#b91c1c",
+  "icons": []
+}

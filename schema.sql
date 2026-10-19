@@ -1,0 +1,11 @@
+create extension if not exists pgcrypto;
+create table if not exists public.alunos (id uuid primary key default gen_random_uuid(), nome text not null, created_at timestamptz not null default now());
+create table if not exists public.turmas (id uuid primary key default gen_random_uuid(), nome text not null unique, created_at timestamptz not null default now());
+create table if not exists public.exames (id uuid primary key default gen_random_uuid(), aluno_id uuid references public.alunos(id) on delete cascade, student_name text not null, class_name text not null, belt text not null, score numeric(4,2) not null, cutoff numeric(4,2) not null default 3, status text not null, details jsonb not null default '[]', created_at timestamptz not null default now());
+create table if not exists public.itens_avaliacao (id uuid primary key default gen_random_uuid(), exame_id uuid not null references public.exames(id) on delete cascade, item_id text not null, tipo text not null, valor text, observacao text);
+alter table public.exames add column if not exists class_name text;
+alter table public.alunos enable row level security; alter table public.exames enable row level security; alter table public.itens_avaliacao enable row level security;
+alter table public.turmas enable row level security;
+create policy "public read alunos" on public.alunos for select using (true); create policy "public insert alunos" on public.alunos for insert with check (true);
+create policy "public all turmas" on public.turmas for all using (true) with check (true);
+create policy "public all exames" on public.exames for all using (true) with check (true); create policy "public all itens" on public.itens_avaliacao for all using (true) with check (true);

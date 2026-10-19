@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#b91c1c" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <title>Exame de Faixa de Judô</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  </head>
+  <body class="bg-slate-100 text-slate-900">
+    <main class="mx-auto max-w-6xl p-4 sm:p-6">
+      <header class="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p class="text-sm font-bold uppercase tracking-widest text-red-700">
+            Judô
+          </p>
+          <h1 class="text-3xl font-black">Exame de Faixa</h1>
+        </div>
+        <div class="flex items-center gap-2">
+          <button
+            id="installApp"
+            class="hidden rounded-lg bg-slate-900 px-3 py-2 text-xs font-bold text-white"
+          >
+            Instalar aplicativo</button
+          ><span
+            id="storageMode"
+            class="rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold"
+            >Offline</span
+          >
+        </div>
+      </header>
+      <nav class="mb-5 flex gap-2">
+        <button
+          class="tab rounded-lg bg-red-700 px-4 py-2 font-bold text-white"
+          data-tab="exam"
+        >
+          Novo exame</button
+        ><button
+          class="tab rounded-lg bg-white px-4 py-2 font-bold"
+          data-tab="history"
+        >
+          Histórico
+        </button>
+      </nav>
+      <section id="examTab" class="space-y-4">
+        <form id="examForm" class="space-y-4">
+          <div class="grid gap-4 rounded-xl bg-white p-4 shadow sm:grid-cols-4">
+            <label class="font-semibold"
+              >Aluno<input
+                id="studentName"
+                required
+                class="mt-1 w-full rounded-lg border p-2"
+                placeholder="Nome completo" /></label
+            ><label class="font-semibold"
+              >Turma<select
+                id="className"
+                required
+                class="mt-1 w-full rounded-lg border p-2"
+              ></select></label
+            ><label class="font-semibold"
+              >Faixa pretendida<select
+                id="belt"
+                class="mt-1 w-full rounded-lg border p-2"
+              ></select></label
+            ><label class="font-semibold"
+              >Nota de corte (0 a 5)<input
+                id="cutoff"
+                type="number"
+                min="0"
+                max="5"
+                step="0.1"
+                value="3"
+                class="mt-1 w-full rounded-lg border p-2"
+            /></label>
+          </div>
+          <details
+            class="rounded-lg border border-slate-200 bg-white text-sm shadow-sm"
+          >
+            <summary
+              class="cursor-pointer px-4 py-3 font-semibold text-slate-600"
+            >
+              Gerenciar turmas
+            </summary>
+            <div class="flex gap-2 border-t border-slate-100 p-3">
+              <input
+                id="newClass"
+                class="w-full rounded-lg border p-2"
+                placeholder="Nome da nova turma"
+              /><button
+                id="addClass"
+                type="button"
+                class="rounded-lg bg-slate-700 px-4 py-2 font-bold text-white"
+              >
+                Salvar turma
+              </button>
+            </div>
+          </details>
+          <aside
+            class="rounded-xl border border-red-100 bg-red-50 p-4 shadow-sm"
+          >
+            <h2 class="font-black text-red-900">Guia de notas das técnicas</h2>
+            <div class="mt-3 grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-3">
+              <p>
+                <strong>0 — Não sabe:</strong> não executa ou apresenta erro
+                grave.
+              </p>
+              <p>
+                <strong>1 — Insuficiente:</strong> reconhece parcialmente, mas
+                não realiza a técnica.
+              </p>
+              <p>
+                <strong>2 — Em desenvolvimento:</strong> realiza com muitos
+                erros e precisa de orientação.
+              </p>
+              <p>
+                <strong>3 — Básico:</strong> executa de forma funcional, com
+                correções necessárias.
+              </p>
+              <p>
+                <strong>4 — Bom:</strong> executa corretamente, com pequenos
+                ajustes.
+              </p>
+              <p>
+                <strong>5 — Perfeito:</strong> execução segura, eficiente, com
+                potência, kuzushi e postura.
+              </p>
+            </div>
+          </aside>
+          <aside
+            class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+          >
+            <h2 class="font-black text-slate-900">
+              Guia de avaliação dos fundamentos
+            </h2>
+            <div class="mt-3 grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-3">
+              <p>
+                <strong>0 — Não demonstrou:</strong> não sabe ou não reconhece.
+              </p>
+              <p>
+                <strong>2 — Reconhece:</strong> sabe o que é, mas não explica ou
+                erra tecnicamente.
+              </p>
+              <p>
+                <strong>3 — Conhecimento parcial:</strong> confunde detalhes ou
+                não identifica o erro.
+              </p>
+              <p>
+                <strong>4 — Domínio parcial:</strong> sabe aplicar ou explicar,
+                mas não ambos.
+              </p>
+              <p>
+                <strong>5 — Domínio completo:</strong> sabe explicar,
+                identificar e aplicar corretamente.
+              </p>
+            </div>
+          </aside>
+          <div id="items" class="space-y-4"></div>
+          <div
+            class="sticky bottom-2 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-slate-900 p-4 text-white shadow-xl"
+          >
+            <p id="result" class="font-bold">Preencha a avaliação</p>
+            <button
+              class="rounded-lg bg-red-600 px-5 py-3 font-black hover:bg-red-500"
+            >
+              Salvar exame
+            </button>
+          </div>
+        </form>
+      </section>
+      <section id="historyTab" class="hidden space-y-4">
+        <div class="grid gap-3 rounded-xl bg-white p-4 shadow sm:grid-cols-5">
+          <label
+            >De<input
+              id="dateFrom"
+              type="date"
+              class="mt-1 w-full rounded border p-2" /></label
+          ><label
+            >Até<input
+              id="dateTo"
+              type="date"
+              class="mt-1 w-full rounded border p-2" /></label
+          ><label
+            >Turma<select
+              id="filterClass"
+              class="mt-1 w-full rounded border p-2"
+            >
+              <option value="">Todas</option>
+            </select></label
+          ><label
+            >Faixa<select
+              id="filterBelt"
+              class="mt-1 w-full rounded border p-2"
+            >
+              <option value="">Todas</option>
+            </select></label
+          ><button
+            id="exportPdf"
+            class="self-end rounded-lg bg-red-700 px-4 py-2 font-bold text-white"
+          >
+            Exportar resumo + detalhes
+          </button>
+        </div>
+        <div class="overflow-x-auto rounded-xl bg-white shadow">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-slate-100">
+              <tr>
+                <th class="p-3">Data</th>
+                <th class="p-3">Aluno</th>
+                <th class="p-3">Turma</th>
+                <th class="p-3">Faixa</th>
+                <th class="p-3">Nota</th>
+                <th class="p-3">Status</th>
+                <th class="p-3"></th>
+              </tr>
+            </thead>
+            <tbody id="historyRows"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
