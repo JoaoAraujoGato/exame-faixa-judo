@@ -1,5 +1,5 @@
-const SUPABASE_URL = "";
-const SUPABASE_ANON_KEY = "";
+const SUPABASE_URL = "https://byhqytcadlcohshxfvnv.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_Rg8_44UdR0k4wjyayIq-1A_pCIBI7l6";
 const $ = (id) => document.getElementById(id);
 const LOCAL_KEY = "judo-exams-v1";
 let materials,
