@@ -10,6 +10,10 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <style>
+      .sort-button { display: inline-flex; align-items: center; gap: .35rem; font-weight: 700; color: #0f172a; cursor: pointer; }
+      .sort-button:hover { color: #b91c1c; }
+    </style>
   </head>
   <body class="bg-slate-100 text-slate-900">
     <main class="mx-auto max-w-6xl p-4 sm:p-6">
@@ -29,8 +33,7 @@
           ><span
             id="storageMode"
             class="rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold"
-            >Offline</span
-          >
+            >Offline</span><details class="relative"><summary class="cursor-pointer list-none rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-sm">Sincronizar</summary><div id="syncMenuItems" class="absolute right-0 z-20 mt-2 flex w-52 flex-col gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-lg"></div></details>
         </div>
       </header>
       <nav class="mb-5 flex gap-2">
@@ -197,23 +200,20 @@
             >
               <option value="">Todas</option>
             </select></label
-          ><button
-            id="exportPdf"
-            class="self-end rounded-lg bg-red-700 px-4 py-2 font-bold text-white"
-          >
-            Exportar resumo + detalhes
-          </button>
+          ><details class="relative self-end"><summary class="cursor-pointer rounded-lg bg-red-700 px-4 py-2 font-bold text-white">Exportar PDF</summary><div class="absolute right-0 z-20 mt-2 flex w-64 flex-col gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-lg"><button id="exportPdf" type="button" class="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100">Exportar resumo + detalhes</button><button id="exportSummary" type="button" class="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100">Exportar resumo</button></div></details>
+          <button id="importCloud" type="button" class="self-end rounded-lg bg-sky-700 px-4 py-2 font-bold text-white">Importar da nuvem</button>
+          <button id="exportCloud" type="button" class="self-end rounded-lg bg-emerald-700 px-4 py-2 font-bold text-white">Exportar para a nuvem</button>
         </div>
         <div class="overflow-x-auto rounded-xl bg-white shadow">
           <table class="w-full text-left text-sm">
             <thead class="bg-slate-100">
               <tr>
-                <th class="p-3">Data</th>
-                <th class="p-3">Aluno</th>
-                <th class="p-3">Turma</th>
-                <th class="p-3">Faixa</th>
-                <th class="p-3">Nota</th>
-                <th class="p-3">Status</th>
+                <th class="p-3"><button class="sort-button" data-sort="date">Data ↕</button></th>
+                <th class="p-3"><button class="sort-button" data-sort="student">Aluno ↕</button></th>
+                <th class="p-3"><button class="sort-button" data-sort="class">Turma ↕</button></th>
+                <th class="p-3"><button class="sort-button" data-sort="belt">Faixa ↕</button></th>
+                <th class="p-3"><button class="sort-button" data-sort="score">Nota ↕</button></th>
+                <th class="p-3"><button class="sort-button" data-sort="status">Status ↕</button></th>
                 <th class="p-3"></th>
               </tr>
             </thead>

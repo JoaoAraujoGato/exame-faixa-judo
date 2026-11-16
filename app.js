@@ -7,6 +7,7 @@ let materials,
   editingId = null;
 let marromSelection = null;
 let classes = JSON.parse(localStorage.getItem("judo-classes-v1") || "[]");
+let historySort = { key: "date", direction: "desc" };
 const beltNames = {
   cinza: "Cinza",
   azul: "Azul",
@@ -50,16 +51,7 @@ async function load() {
       s.append(o);
     });
   if (supabase) {
-    $("storageMode").textContent = "Supabase";
-    const [{ data }, { data: classData }] = await Promise.all([
-      supabase
-        .from("exames")
-        .select("*")
-        .order("created_at", { ascending: false }),
-      supabase.from("turmas").select("*").order("nome"),
-    ]);
-    if (data) exams = data;
-    if (classData?.length) classes = classData.map((x) => x.nome);
+    document.getElementById("storageMode").textContent = "Local + nuvem disponível";
   }
   renderClasses();
   $("belt").value = "cinza";
@@ -190,6 +182,21 @@ function renderHistory() {
         x.created_at.slice(0, 10) >= $("dateFrom").value) &&
       (!$("dateTo").value || x.created_at.slice(0, 10) <= $("dateTo").value),
   );
+  rows.sort((a, b) => {
+    const values = {
+      date: [a.created_at, b.created_at],
+      student: [a.student_name, b.student_name],
+      class: [a.class_name || "", b.class_name || ""],
+      belt: [beltNames[a.belt] || "", beltNames[b.belt] || ""],
+      score: [Number(a.score), Number(b.score)],
+      status: [a.status, b.status],
+    }[historySort.key];
+    const left = values[0], right = values[1];
+    const result = typeof left === "number" && typeof right === "number"
+      ? left - right
+      : String(left).localeCompare(String(right), "pt-BR", { sensitivity: "base" });
+    return historySort.direction === "asc" ? result : -result;
+  });
   $("historyRows").innerHTML =
     rows
       .map(
@@ -289,7 +296,7 @@ $("installApp").addEventListener("click", async () => {
   $("installApp").classList.add("hidden");
 });
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js");
-document.addEventListener("click", (e) => {
+document.addEventListener("click", async (e) => {
   if (e.target.matches(".tab")) {
     document.querySelectorAll(".tab").forEach((x) => {
       x.classList.remove("bg-red-700", "text-white");
@@ -307,7 +314,15 @@ document.addEventListener("click", (e) => {
   if (e.target.dataset.pdf)
     exportExamPdf(exams.find((x) => x.id === e.target.dataset.pdf));
   if (e.target.dataset.delete && confirm("Excluir este exame?")) {
-    exams = exams.filter((x) => x.id !== e.target.dataset.delete);
+    const id = e.target.dataset.delete;
+    if (supabase) {
+      const { error } = await supabase.from("exames").delete().eq("id", id);
+      if (error) {
+        alert("Não foi possível excluir o exame no Supabase.");
+        return;
+      }
+    }
+    exams = exams.filter((x) => x.id !== id);
     localStorage.setItem(LOCAL_KEY, JSON.stringify(exams));
     renderHistory();
   }
@@ -317,6 +332,23 @@ $("belt").addEventListener("change", () => {
   renderItems();
 });
 $("examForm").addEventListener("submit", save);
+document.querySelectorAll(".sort-button").forEach((button) =>
+  button.addEventListener("click", () => {
+    const key = button.dataset.sort;
+    historySort = {
+      key,
+      direction:
+        historySort.key === key && historySort.direction === "asc"
+          ? "desc"
+          : "asc",
+    };
+    document.querySelectorAll(".sort-button").forEach((item) => {
+      item.textContent = item.textContent.replace(/[▲▼↕]/g, "").trim() + " ↕";
+    });
+    button.textContent = `${button.textContent.replace(/[▲▼↕]/g, "").trim()} ${historySort.direction === "asc" ? "▲" : "▼"}`;
+    renderHistory();
+  }),
+);
 $("addClass").addEventListener("click", async () => {
   const name = $("newClass").value.trim();
   if (!name) return;
@@ -331,7 +363,7 @@ $("addClass").addEventListener("click", async () => {
 ["filterClass", "filterBelt", "dateFrom", "dateTo"].forEach((id) =>
   $(id).addEventListener("change", renderHistory),
 );
-$("exportPdf").addEventListener("click", () => {
+function filteredExams(){return exams.filter((x)=>(!document.getElementById("filterClass").value||x.class_name===document.getElementById("filterClass").value)&&(!document.getElementById("filterBelt").value||x.belt===document.getElementById("filterBelt").value)&&(!document.getElementById("dateFrom").value||x.created_at.slice(0,10)>=document.getElementById("dateFrom").value)&&(!document.getElementById("dateTo").value||x.created_at.slice(0,10)<=document.getElementById("dateTo").value))}function exportSummaryPdf(){const{jsPDF}=window.jspdf,doc=new jsPDF(),rows=filteredExams();doc.text("Exame de Faixa de Judô",14,15);doc.text("Resumo dos exames",14,21);addPdfGuide(doc);doc.autoTable({startY:42,head:[["Data","Aluno","Turma","Faixa","Nota","Status"]],body:rows.map((x)=>[new Date(x.created_at).toLocaleDateString("pt-BR"),x.student_name,x.class_name||"-",beltNames[x.belt],Number(x.score).toFixed(2),x.status])});doc.save("exames-de-judo-resumo.pdf")}document.getElementById("exportSummary").addEventListener("click",exportSummaryPdf);document.getElementById("exportPdf").addEventListener("click", () => {
   const { jsPDF } = window.jspdf,
     doc = new jsPDF();
   const rows = exams.filter(
@@ -382,4 +414,4 @@ $("exportPdf").addEventListener("click", () => {
   });
   doc.save("exames-de-judo-completo.pdf");
 });
-load();
+async function importCloudData(){if(!supabase){alert("Configure o Supabase primeiro.");return}const results=await Promise.all([supabase.from("exames").select("*").order("created_at",{ascending:false}),supabase.from("turmas").select("*").order("nome")]);const cloudExams=results[0].data||[],cloudClasses=results[1].data||[];if(results[0].error||results[1].error){alert("Não foi possível importar os dados.");return}const localById=new Map(exams.map(x=>[x.id,x]));cloudExams.forEach(x=>localById.set(x.id,x));exams=[...localById.values()];classes=[...new Set([...classes,...cloudClasses.map(x=>x.nome)])].sort((a,b)=>a.localeCompare(b));localStorage.setItem(LOCAL_KEY,JSON.stringify(exams));localStorage.setItem("judo-classes-v1",JSON.stringify(classes));renderClasses();renderHistory();alert(cloudExams.length+" exame(s) importado(s).")}async function exportCloudData(){if(!supabase){alert("Configure o Supabase primeiro.");return}const examResult=await supabase.from("exames").upsert(exams),classResult=await supabase.from("turmas").upsert(classes.map(nome=>({nome})));if(examResult.error||classResult.error){alert("Não foi possível exportar todos os dados.");return}alert(exams.length+" exame(s) e "+classes.length+" turma(s) exportados para a nuvem.")}document.getElementById("importCloud").addEventListener("click",importCloudData);document.getElementById("exportCloud").addEventListener("click",exportCloudData);const syncMenu=document.getElementById("syncMenuItems");if(syncMenu){syncMenu.append(document.getElementById("importCloud"),document.getElementById("exportCloud"));document.getElementById("importCloud").className="w-full rounded-lg bg-slate-100 px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-200";document.getElementById("exportCloud").className="w-full rounded-lg bg-slate-100 px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-200"}load();
